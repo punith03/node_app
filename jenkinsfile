@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+    environment{
+        DOCKERHUB_CREDENTIALS=credentials('dockerHub')
+    }
+
+    stages {
+        stage('code'){
+          steps {
+             echo "clone the code from github" 
+             git url: "https://github.com/punith03/node-todo-cicd.git", branch: "master"
+          }  
+        }
+         stage('build'){
+          steps {
+              echo " build the image"
+              sh "docker build -t nodejs-app ."
+          }  
+        }
+        
+        stage('Login to Docker Hub'){
+          steps {
+              echo "login to dockerhub"
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+          stage('Push Docker Hub'){
+          steps {
+              echo "push to dockerhub"
+             sh "docker tag nodejs-app $DOCKERHUB_CREDENTIALS_USR/nodejs-app:latest"
+                sh 'docker push $DOCKERHUB_CREDENTIALS_USR/nodejs-app:latest'
+            }
+          
+        }
+         stage('deploy'){
+          steps {
+              echo "Deploy in the Ec2 server"
+              sh " docker-compose down &&  docker-compose up -d"
+          } 
+        
+    }
+}
+
+}
+
